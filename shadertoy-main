@@ -1,0 +1,35 @@
+struct ray
+{
+    vec3 o;
+    vec3 d;
+};
+
+vec3 bgColor(ray r)
+{
+    vec3 normDir = normalize(r.d);
+    float t = 0.5*(normDir.y + 1.0);
+    vec3 white = vec3(1.0, 1.0, 1.0);
+    vec3 skyBlue = vec3(0.5, 0.7, 1);
+    vec3 color = (1.0 - t) * white + (t * skyBlue);
+    return color;
+}
+
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = fragCoord/iResolution.xy;
+
+    //Map to (-2,-1) {lower left} to (2,1) {upper right} range
+    uv.x = 4.0 * uv.x - 2.0;
+    uv.y = 2.0 * uv.y - 1.0;
+    ray r;
+    r.o = vec3(0,0,0);
+    r.d = vec3(uv.x, uv.y, -1.0);
+    
+    // Get the Bg Color
+    vec3 col = bgColor(r);
+
+    // Output to screen
+    fragColor = vec4(col,1.0);
+}
