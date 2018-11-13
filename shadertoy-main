@@ -1,17 +1,58 @@
 struct ray
 {
-    vec3 o;
-    vec3 d;
+    vec3 origin;
+    vec3 direction;
 };
+
+struct sphere
+{
+    vec3 center;
+    float radius;
+};
+    
+bool intersectSphere(sphere s, ray r)
+{
+    // (P(t) - sphere.center)^2 = sphere.radius^2
+    // (r.origin + t * r.direction - sphere.center)^2 = sphere.radius^2
+    // ((r.origin - sphere.center) - t * r.direction)^2 = sphere.radius^2
+    // A = r.origin - sphere.center
+    // B = t * r.direction
+    // (A+B)^2 = A^2 + 2*A*B + B^2 ==> dot(A,A) + 2*A*B + dot(B,B) 
+    //  =  dot((r.origin-sphere.center), r.origin-sphere.center) + 2 * (r.origin-sphere.center) * (t.B) + t^2* dot(B,B) -R^2 = 0
+    vec3 A = r.origin - s.center;
+    float a = dot(r.direction, r.direction); // Coeff of t^2 (at^2 + bt + c = 0)
+    float b = 2.0 * dot(A, r.direction); // Coeff of t
+    float c =  dot(A,A) - s.radius * s.radius;
+    
+    float disc = b*b - 4.0*a*c;
+    if(disc < 0.0)
+        return false;
+    else 
+        return true;
+    
+}
 
 vec3 bgColor(ray r)
 {
-    vec3 normDir = normalize(r.d);
+    vec3 normDir = normalize(r.direction);
     float t = 0.5*(normDir.y + 1.0);
     vec3 white = vec3(1.0, 1.0, 1.0);
     vec3 skyBlue = vec3(0.5, 0.7, 1);
     vec3 color = (1.0 - t) * white + (t * skyBlue);
     return color;
+}
+
+vec3 color(ray r)  
+{
+    // Sphere
+    sphere s;
+    s.center = vec3(0.0, 0.0, 1.0);
+    s.radius = 0.5;
+    
+    if(intersectSphere(s, r))
+        return vec3(1.0, 0.0, 0.0);
+    else 
+        return bgColor(r);
 }
 
 
@@ -23,12 +64,16 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     //Map to (-2,-1) {lower left} to (2,1) {upper right} range
     uv.x = 4.0 * uv.x - 2.0;
     uv.y = 2.0 * uv.y - 1.0;
+    
+    // Ray
     ray r;
-    r.o = vec3(0,0,0);
-    r.d = vec3(uv.x, uv.y, -1.0);
+    r.origin = vec3(0,0,0);
+    r.direction = vec3(uv.x, uv.y, -1.0);
+    
+
     
     // Get the Bg Color
-    vec3 col = bgColor(r);
+    vec3 col = color(r);
 
     // Output to screen
     fragColor = vec4(col,1.0);
