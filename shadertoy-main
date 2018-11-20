@@ -10,7 +10,7 @@ struct sphere
     float radius;
 };
     
-bool intersectSphere(sphere s, ray r)
+float intersectSphere(sphere s, ray r)
 {
     // (P(t) - sphere.center)^2 = sphere.radius^2
     // (r.origin + t * r.direction - sphere.center)^2 = sphere.radius^2
@@ -25,11 +25,11 @@ bool intersectSphere(sphere s, ray r)
     float c =  dot(A,A) - s.radius * s.radius;
     
     float disc = b*b - 4.0*a*c;
-    if(disc < 0.0)
-        return false;
-    else 
-        return true;
     
+    if(disc < 0.0)
+        return -1.0;
+    else 
+        return (-b - sqrt(disc)) / (2.0 * a);
 }
 
 vec3 bgColor(ray r)
@@ -42,17 +42,32 @@ vec3 bgColor(ray r)
     return color;
 }
 
+// To find the P from the parametric ray equation
+vec3 rayAtP(ray r, float t)
+{
+    vec3 P = r.origin + r.direction * t;
+    return P;
+}
+
 vec3 color(ray r)  
 {
     // Sphere
     sphere s;
-    s.center = vec3(0.0, 0.0, 1.0);
+    s.center = vec3(0.0, 0.0, -1.0);
     s.radius = 0.5;
     
-    if(intersectSphere(s, r))
-        return vec3(1.0, 0.0, 0.0);
+    float d = intersectSphere(s, r);
+    if(d > 0.0)
+    {
+        vec3 HitPoint = rayAtP(r, d);
+        vec3 rayToSphereNormal = normalize(HitPoint - s.center);
+        
+        return vec3((rayToSphereNormal.x + 1.0) * 0.5, (rayToSphereNormal.y + 1.0) * 0.5,  (rayToSphereNormal.z+1.0) * 0.5);
+    }
     else 
+    {
         return bgColor(r);
+    }
 }
 
 
@@ -64,6 +79,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     //Map to (-2,-1) {lower left} to (2,1) {upper right} range
     uv.x = 4.0 * uv.x - 2.0;
     uv.y = 2.0 * uv.y - 1.0;
+    
     
     // Ray
     ray r;
