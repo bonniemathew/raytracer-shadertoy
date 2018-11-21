@@ -49,20 +49,82 @@ vec3 rayAtP(ray r, float t)
     return P;
 }
 
-vec3 color(ray r)  
+//Random number 
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+// Random position in Sphere
+vec3 randomSpherePoint(vec2 uv)
 {
-    // Sphere
-    sphere s;
-    s.center = vec3(0.0, 0.0, -1.0);
-    s.radius = 0.5;
+    vec3 randPoint = 2.0 * vec3(rand(uv), rand(uv), rand(uv)) - vec3(1.0);
     
-    float d = intersectSphere(s, r);
+    while(true)
+    {
+        if(length(randPoint) <= 1.0)
+            break;
+        
+        else
+            randPoint = 2.0 * vec3(rand(uv), rand(uv), rand(uv)) - vec3(1.0);
+            
+    }
+    return randPoint;
+}
+
+
+vec3 findColor(ray r)  
+{
+
+    // Sphere
+    sphere s1;
+    s1.center = vec3(0.0, 0.0, -1.0);
+    s1.radius = 0.5;
+    
+    sphere s2;
+    s2.center = vec3(0, 1, -2.0);
+    s2.radius = 1.0;
+    
+    float d1 = intersectSphere(s1, r);
+    float d2 = intersectSphere(s2, r);
+    
+    float d = d1;
+    vec3 sphereCenter = s1.center;
+    
+    vec3 finalColor;
+    
+    if(d1 > 0.0)
+    {
+        d = d1;
+        sphereCenter = s1.center;
+
+        vec3 HitPoint = rayAtP(r, d);
+        vec3 rayToSphereNormal = normalize(HitPoint - sphereCenter);
+        ray secondaryRay;
+        secondaryRay.origin = HitPoint;
+        secondaryRay.direction = normalize(randomSpherePoint(vec2(HitPoint.x, HitPoint.y)) - HitPoint);
+        //vec3 surfColor = vec3((rayToSphereNormal.x + 1.0) * 0.5, (rayToSphereNormal.y + 1.0) * 0.5,  (rayToSphereNormal.z+1.0) * 0.5);
+
+        finalColor =  vec3(d, 0, 0) ;//+ 0.5 * findColor(secondaryRay);
+    }
+    
+    if(d2 > 0.0)
+    {
+        d = d2;
+        sphereCenter = s2.center;
+
+        vec3 HitPoint = rayAtP(r, d);
+        vec3 rayToSphereNormal = normalize(HitPoint - sphereCenter);
+        ray secondaryRay;
+        secondaryRay.origin = HitPoint;
+        secondaryRay.direction = normalize(randomSpherePoint(vec2(HitPoint.x, HitPoint.y)) - HitPoint);
+        //vec3 surfColor = vec3((rayToSphereNormal.x + 1.0) * 0.5, (rayToSphereNormal.y + 1.0) * 0.5,  (rayToSphereNormal.z+1.0) * 0.5);
+
+        finalColor +=  vec3(0, d, 0) ;//+ 0.5 * findColor(secondaryRay);
+    }
+    
     if(d > 0.0)
     {
-        vec3 HitPoint = rayAtP(r, d);
-        vec3 rayToSphereNormal = normalize(HitPoint - s.center);
-        
-        return vec3((rayToSphereNormal.x + 1.0) * 0.5, (rayToSphereNormal.y + 1.0) * 0.5,  (rayToSphereNormal.z+1.0) * 0.5);
+        return finalColor;
     }
     else 
     {
@@ -73,23 +135,42 @@ vec3 color(ray r)
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+    // Multiple rays per pixel for anti-aliasing
+    const int NUM_RAYS = 10;
+    
     // Normalized pixel coordinates (from 0 to 1)
     vec2 uv = fragCoord/iResolution.xy;
 
     //Map to (-2,-1) {lower left} to (2,1) {upper right} range
-    uv.x = 4.0 * uv.x - 2.0;
-    uv.y = 2.0 * uv.y - 1.0;
-    
-    
-    // Ray
-    ray r;
-    r.origin = vec3(0,0,0);
-    r.direction = vec3(uv.x, uv.y, -1.0);
-    
+    vec2 mappedUV = uv;
+    mappedUV.x = 4.0 * uv.x - 2.0;
+    mappedUV.y = 2.0 * uv.y - 1.0;
 
+    // Ray
+    ray r[NUM_RAYS];
+    vec3 color[NUM_RAYS];
+ 
+    for(int i =0; i < NUM_RAYS; i++)
+    {
+
+        vec2 uvRand;
+        uvRand.x  = uv.x + float(i/NUM_RAYS) * 0.001;
+        uvRand.y = uv.y + float((i-NUM_RAYS)/NUM_RAYS) * 0.001;
+        float randNum = rand(uvRand);
+        r[i].origin = vec3(0,0,0);
+        r[i].direction = vec3(mappedUV.x + randNum * 0.001, mappedUV.y + randNum *0.001, -1.0);
+        color[i] = findColor(r[i]);
+    }
+    
+	vec3 finalColor;
+    for(int i =0; i < NUM_RAYS;i++)
+    {
+        finalColor += color[i];
+    }
+    finalColor /= float(NUM_RAYS);
     
     // Get the Bg Color
-    vec3 col = color(r);
+    vec3 col = finalColor;
 
     // Output to screen
     fragColor = vec4(col,1.0);
