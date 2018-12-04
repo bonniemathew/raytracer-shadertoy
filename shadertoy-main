@@ -81,12 +81,13 @@ vec3 findColor(ray r)
     s1.radius = 0.5;
     
     sphere s2;
-    s2.center = vec3(0, -2, -1.5);
-    s2.radius = 2.0 ;
+    s2.center = vec3(0, -2.1, -2.0);
+    s2.radius = 2.3 ;
     
 
     float d1 = intersectSphere(s1, r);
     float d2 = intersectSphere(s2, r);
+    
     
     float d = d1;
     vec3 sphereCenter = s2.center;
@@ -105,7 +106,8 @@ vec3 findColor(ray r)
         secondaryRay.direction = normalize(randomSpherePoint(vec2(HitPoint.x, HitPoint.y)) - HitPoint);
         //vec3 surfColor = vec3((rayToSphereNormal.x + 1.0) * 0.5, (rayToSphereNormal.y + 1.0) * 0.5,  (rayToSphereNormal.z+1.0) * 0.5);
 
-        finalColor =  vec3(d, d, d) ;//+ 0.5 * findColor(secondaryRay);
+        float col = 1.0 - d;
+        finalColor =  vec3(col, col, col) ;//+ 0.5 * findColor(secondaryRay);
     }
     
     if(d2 > 0.0)
@@ -121,12 +123,13 @@ vec3 findColor(ray r)
             secondaryRay.origin = HitPoint;
             secondaryRay.direction = normalize(randomSpherePoint(vec2(HitPoint.x, HitPoint.y)) - HitPoint);
             //vec3 surfColor = vec3((rayToSphereNormal.x + 1.0) * 0.5, (rayToSphereNormal.y + 1.0) * 0.5,  (rayToSphereNormal.z+1.0) * 0.5);
-
-            finalColor =  vec3(d2, d2, d2) ;//+ 0.5 * findColor(secondaryRay);
+			float col = 1.0 - d;
+            finalColor =  vec3(col, col, col) ;//+ 0.5 * findColor(secondaryRay);
         } 
         else 
         {
-            finalColor = vec3 (d1, d1, d1);
+            float col = 1.0 - d1;
+            finalColor = vec3 (col, col, col);
         }
     }
     
